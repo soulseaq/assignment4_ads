@@ -5,6 +5,7 @@ public class Experiment {
     private String experimentLabel;
     private long bfsTimeNs;
     private long dfsTimeNs;
+    private long dijkstraTimeNs;
 
     public void runTraversals(Graph g, String label, boolean printOrder) {
         this.experimentLabel = label;
@@ -23,8 +24,14 @@ public class Experiment {
         long dfsEnd = System.nanoTime();
         dfsTimeNs = dfsEnd - dfsStart;
 
-        System.out.printf("  BFS time: %,d ns  (%,.1f µs)%n", bfsTimeNs, bfsTimeNs / 1_000.0);
-        System.out.printf("  DFS time: %,d ns  (%,.1f µs)%n", dfsTimeNs, dfsTimeNs / 1_000.0);
+        long dijkstraStart = System.nanoTime();
+        g.dijkstra(0);
+        long dijkstraEnd = System.nanoTime();
+        dijkstraTimeNs = dijkstraEnd - dijkstraStart;
+
+        System.out.printf("  BFS      time: %,d ns  (%,.1f µs)%n", bfsTimeNs, bfsTimeNs / 1_000.0);
+        System.out.printf("  DFS      time: %,d ns  (%,.1f µs)%n", dfsTimeNs, dfsTimeNs / 1_000.0);
+        System.out.printf("  Dijkstra time: %,d ns  (%,.1f µs)%n", dijkstraTimeNs, dijkstraTimeNs / 1_000.0);
 
         if (printOrder) {
             System.out.println("  BFS order: " + bfsOrder);
@@ -63,22 +70,23 @@ public class Experiment {
     }
 
     public void printResults(Experiment[] experiments, int[] sizes) {
-        System.out.println("\n\n╔══════════════════════════════════════════════════════╗");
-        System.out.println(  "║            PERFORMANCE COMPARISON TABLE              ║");
-        System.out.println(  "╠══════════════╦══════════════════╦════════════════════╣");
-        System.out.println(  "║   Graph Size ║   BFS Time (µs)  ║   DFS Time (µs)    ║");
-        System.out.println(  "╠══════════════╬══════════════════╬════════════════════╣");
+        System.out.println("\n\n╔═══════════════════════════════════════════════════════════════════╗");
+        System.out.println(  "║               PERFORMANCE COMPARISON TABLE                        ║");
+        System.out.println(  "╠══════════════╦══════════════════╦════════════════════╦═════════════╣");
+        System.out.println(  "║   Graph Size ║   BFS Time (µs)  ║   DFS Time (µs)    ║ Dijkstra(µs)║");
+        System.out.println(  "╠══════════════╬══════════════════╬════════════════════╬═════════════╣");
 
         for (int i = 0; i < experiments.length; i++) {
-            System.out.printf("║  %4d vertices║  %14.2f  ║  %16.2f    ║%n",
+            System.out.printf("║  %4d vertices║  %14.2f  ║  %16.2f    ║ %11.2f║%n",
                     sizes[i],
                     experiments[i].bfsTimeNs / 1_000.0,
-                    experiments[i].dfsTimeNs / 1_000.0);
+                    experiments[i].dfsTimeNs / 1_000.0,
+                    experiments[i].dijkstraTimeNs / 1_000.0);
         }
 
-        System.out.println("╚══════════════╩══════════════════╩════════════════════╝");
-        System.out.println("\n  Note: times are single-run measurements; JVM warm-up");
-        System.out.println("  may cause the first run to appear slower than later ones.");
+        System.out.println("╚══════════════╩══════════════════╩════════════════════╩═════════════╝");
+        System.out.println("\n  Note: Dijkstra uses simple loops (O(V²)) so it grows faster than");
+        System.out.println("  BFS and DFS (O(V+E)) as graph size increases. This is expected.");
     }
 
     private Graph buildConnectedGraph(int n) {
@@ -89,12 +97,12 @@ public class Experiment {
         }
 
         for (int i = 0; i < n; i++) {
-            g.addEdge(i, (i + 1) % n);
+            g.addEdge(i, (i + 1) % n, (i % 9) + 1);
         }
 
         for (int i = 0; i < n; i++) {
-            if (n > 4) g.addEdge(i, (i + 2) % n);
-            if (n > 6) g.addEdge(i, (i + 3) % n);
+            if (n > 4) g.addEdge(i, (i + 2) % n, (i % 7) + 2);
+            if (n > 6) g.addEdge(i, (i + 3) % n, (i % 5) + 3);
         }
 
         return g;
